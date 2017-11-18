@@ -23,6 +23,7 @@ class pin_login(object):
             password = getpass.getpass("Password:  ")
             if self.try_login(username, password):
                 self.ask_for_saving_psw(destination, username, password)
+        return username, password
 
     def ask_for_saving(self, destination, username, password):
         while True:
