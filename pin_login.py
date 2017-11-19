@@ -88,21 +88,35 @@ class pin_login(object):
 
 # --------------------------
 
-def encode(pin, msg):
+def encode(pin, message):
+    """Encode the message with pin coed.
+    
+    Arguments:
+        pin {str} -- using this as seed to generate ascii map.
+        message {str} -- the message wants to encrypt.
+    
+    Returns:
+        [list] -- a list of swapped ascii number.
+    """
     random.seed(pin)
     encode_map = [i for i in range(127)]
     random.shuffle(encode_map)
-    ascii_code = [encode_map[ord(c)] for c in msg]
+    ascii_code = [encode_map[ord(c)] for c in message]
     return ascii_code
 
 def decode(pin, enc_msg):
+    """Decode the encrypted message by pin code.
+    
+    Arguments:
+        pin {str} -- sing this as seed to generate ascii map.
+        enc_msg {str} -- the message wants to be decode.
+    
+    Returns:
+        [str] -- decoded message
+    """
     random.seed(pin)
     rev_map = [i for i in range(127)]
     random.shuffle(rev_map)
     decoded_ascii = [rev_map.index(c) for c in enc_code]
     decoded_msg = "".join([chr(n) for n in decoded_ascii]) 
     return decoded_msg
-
-if __name__ == '__main__':
-    pl = pin_login()
-    pl.save_login_info("Local", "raymond", "test")
