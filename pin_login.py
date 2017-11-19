@@ -6,9 +6,9 @@ import getpass
 
 class pin_login(object):
     """docstring for pin_login"""
-    def __init__(self):
+    def __init__(self, login_verify_method=None):
         self.store_path = self._get_store_path()
-        self.login_verify_method = None
+        self.login_verify_method = login_verify_method
 
     def get_login(self, destination):
         # try to read encoded login info
@@ -21,15 +21,18 @@ class pin_login(object):
             # first time to login / no saved information
             username = raw_input("User name: ")
             password = getpass.getpass("Password:  ")
-            if self.try_login(username, password):
+            if self._try_login(username, password):
                 self.ask_for_saving_psw(destination, username, password)
+            else:
+                print "User name or password incorrect."
         return username, password
 
-    def ask_for_saving(self, destination, username, password):
+    def ask_for_saving_psw(self, destination, username, password):
         while True:
             saving_option = raw_input("Do you want to save your login information by pin code? [Y/N]")
             if saving_option.lower() == "y":
                 self.save_login_info(destination, username, password)
+                break
             else:
                 break
 
@@ -60,7 +63,7 @@ class pin_login(object):
 
 
     def load_login_info(self, destination, login_info):
-        pin = raw_input("Please enter 4 digit pin code:")
+        pin = getpass.getpass("Please enter 4 digit pin code:")
         username = login_info[destination]["Username"]
         password = decode(pin, login_info[destination]["Password"])
         return username, password
