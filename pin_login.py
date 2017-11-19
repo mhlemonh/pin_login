@@ -117,6 +117,6 @@ def decode(pin, enc_msg):
     random.seed(pin)
     rev_map = [i for i in range(127)]
     random.shuffle(rev_map)
-    decoded_ascii = [rev_map.index(c) for c in enc_code]
+    decoded_ascii = [rev_map.index(c) for c in enc_msg]
     decoded_msg = "".join([chr(n) for n in decoded_ascii]) 
     return decoded_msg
