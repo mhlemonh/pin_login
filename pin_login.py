@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import json
 import random
 import getpass
@@ -9,34 +10,69 @@ class pin_login(object):
     def __init__(self, login_verify_method=None):
         self.store_path = self._get_store_path()
         self.login_verify_method = login_verify_method
+        self.max_try = 3
 
     def get_login(self, destination):
         # try to read encoded login info
-        with open(self.store_path) as psw_bin:
+        with open(self.store_path, 'r') as psw_bin:
             login_info = json.loads(psw_bin.read())
 
         if destination in login_info:
-            username, password = self.load_login_info(destination, login_info)
+            username, password = self.pin_login(destination, login_info)
         else:
-            # first time to login / no saved information
+            username, password = self.normal_login(destination)
+
+        return username, password
+
+    def normal_login(self, destination):
+        # first time to login / no saved information
+        error_count = 0
+        while error_count < self.max_try:
             username = raw_input("User name: ")
             password = getpass.getpass("Password:  ")
             if self._try_login(username, password):
-                self.ask_for_saving_psw(destination, username, password)
+                self._ask_for_saving_psw(destination, username, password)
+                return username, password
             else:
                 print "User name or password incorrect."
-        return username, password
+                error_count += 1
+        else:
+            raise KeyError("Exceed maximum attempt.")
 
-    def ask_for_saving_psw(self, destination, username, password):
-        while True:
-            saving_option = raw_input("Do you want to save your login information by pin code? [Y/N]")
-            if saving_option.lower() == "y":
-                self.save_login_info(destination, username, password)
-                break
+    def pin_login(self, destination, login_info):
+        error_count = 0
+        while error_count < self.max_try:
+            username, password = self._load_login_info(destination, login_info)
+            if self._try_login(username, password):
+                return username, password
             else:
-                break
+                print "Pin incorrect or password changed."
+                error_count += 1
+        else:
+            reset_option = raw_input("Do you want to remove pin?(Y/N)")
+            if reset_option.lower() == "y":
+                self.reset_pin(destination)
+            else:
+                raise KeyError("Exceed maximum attempt.")
 
-    def save_login_info(self, destination, username, password):
+    def reset_pin(self, destination):
+        with open(self.store_path, 'r') as psw_bin:
+            login_info = json.loads(psw_bin.read())
+
+        _ = login_info.pop(destination, None)
+
+        with open(self.store_path, 'w') as psw_bin:
+            psw_bin.write(json.dumps(login_info, indent=4))
+        print "Pin has been removed."
+        sys.exit()
+        
+
+    def _ask_for_saving_psw(self, destination, username, password):
+        saving_option = raw_input("Do you want to save your login information by pin code?(Y/N) ")
+        if saving_option.lower() == "y":
+            self._save_login_info(destination, username, password)
+
+    def _save_login_info(self, destination, username, password):
         while True:
             pin = getpass.getpass("Please enter 4 digit pin code(number only):")
             if not pin.isdigit():
@@ -57,12 +93,13 @@ class pin_login(object):
             login_info = json.loads(psw_bin.read())
 
         with open(self.store_path, 'w') as psw_bin:
+            # over write the login information if it has been exist.
             login_info[destination] = {"Username":username,"Password":encoded_psw}
             psw_bin.write(json.dumps(login_info, indent=4))
             
 
 
-    def load_login_info(self, destination, login_info):
+    def _load_login_info(self, destination, login_info):
         pin = getpass.getpass("Please enter 4 digit pin code:")
         username = login_info[destination]["Username"]
         password = decode(pin, login_info[destination]["Password"])
